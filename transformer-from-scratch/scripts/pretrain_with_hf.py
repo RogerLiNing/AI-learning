@@ -23,6 +23,29 @@ from torch.amp import autocast, GradScaler
 # 添加项目根目录到路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# 安全处理函数，确保所有ID都在有效范围内
+def safe_process_batch(batch, vocab_size, device):
+    """安全处理批次数据，确保所有ID都在有效范围内"""
+    input_ids = batch['input_ids'].to(device)
+    attention_mask = batch['attention_mask'].to(device)
+    labels = batch['labels'].to(device)
+    
+    # 检查并限制输入ID范围
+    max_input_id = input_ids.max().item()
+    if max_input_id >= vocab_size:
+        print(f"\n[WARNING] 输入中发现超出范围的token ID: {max_input_id} >= {vocab_size}")
+        print(f"\n[WARNING] 自动将超出范围的ID限制在词表大小范围内")
+        input_ids = torch.clamp(input_ids, 0, vocab_size-1)
+    
+    # 检查并限制标签ID范围
+    max_label_id = labels.max().item()
+    if max_label_id >= vocab_size:
+        print(f"\n[WARNING] 标签中发现超出范围的token ID: {max_label_id} >= {vocab_size}")
+        print(f"\n[WARNING] 自动将超出范围的标签限制在词表大小范围内")
+        labels = torch.clamp(labels, 0, vocab_size-1)
+    
+    return input_ids, attention_mask, labels
+
 from model.transformer import TransformerLM
 from data.hf_tokenizer import HFTokenizer
 from data.conversation_dataset import ConversationDataset
@@ -174,10 +197,9 @@ def train(config, model, train_loader, val_loader=None, device='cuda', use_amp=T
         progress_bar = tqdm(train_loader, desc=f"Epoch {epoch}/{num_epochs}")
         
         for step, batch in enumerate(progress_bar):
-            # 将数据移动到设备
-            input_ids = batch['input_ids'].to(device)
-            attention_mask = batch['attention_mask'].to(device)
-            labels = batch['labels'].to(device)
+            # 安全处理批次数据，确保所有ID都在有效范围内
+            vocab_size = model.embedding.token_embedding.embedding.num_embeddings
+            input_ids, attention_mask, labels = safe_process_batch(batch, vocab_size, device)
             
             # 混合精度训练
             if use_amp and device != 'cpu':
@@ -311,10 +333,9 @@ def evaluate(model, val_loader, device='cuda', use_amp=True):
     
     with torch.no_grad():
         for batch in tqdm(val_loader, desc="Evaluating"):
-            # 将数据移动到设备
-            input_ids = batch['input_ids'].to(device)
-            attention_mask = batch['attention_mask'].to(device)
-            labels = batch['labels'].to(device)
+            # 安全处理批次数据，确保所有ID都在有效范围内
+            vocab_size = model.embedding.token_embedding.embedding.num_embeddings
+            input_ids, attention_mask, labels = safe_process_batch(batch, vocab_size, device)
             
             # 混合精度前向传播
             if use_amp and device != 'cpu':
