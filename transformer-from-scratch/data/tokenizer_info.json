@@ -1,0 +1,6 @@
+{
+  "type": "hf_tokenizer",
+  "pretrained_model_name": "bert-base-chinese",
+  "vocab_size": 21128,
+  "add_special_tokens": true
+}
