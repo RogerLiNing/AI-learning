@@ -141,7 +141,9 @@ def train(config, model, train_loader, val_loader=None, device='cuda', use_amp=T
     # 混合精度训练设置
     if use_amp and device != 'cpu':
         device_type = 'cuda' if device.startswith('cuda') else device
-        scaler = GradScaler(device_type=device_type)
+        # 使用不带device_type参数的GradScaler (适用于PyTorch较早版本)
+        scaler = GradScaler()
+        # 但autocast仍然使用device_type参数
         autocast_fn = lambda: autocast(device_type=device_type)
     else:
         autocast_fn = contextlib.nullcontext
