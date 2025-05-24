@@ -279,6 +279,89 @@ def prepare_classification_data(input_file: str, output_file: str, text_field: s
     logging.info(f"分类数据准备完成: {input_file} -> {output_file}")
 
 
+def prepare_dialogue_instruction_data(input_file: str, output_file: str, split_type: str = 'conversation', 
+                                     output_format: str = 'jsonl', add_special_tokens: bool = True):
+    """
+    处理对话式指令数据集，该数据集中的每行包含多个用<s>和</s>标记的对话段落
+    
+    参数:
+        input_file: 输入文件路径（每行包含多个对话样本）
+        output_file: 输出文件路径
+        split_type: 分割类型，可选：
+            - 'conversation': 将每个<s>...</s>对视为一个样本
+            - 'line': 将每行视为一个样本
+            - 'paired': 将相邻的两个<s>...</s>组合为问答对
+        output_format: 输出格式，可选 'jsonl' 或 'txt'
+        add_special_tokens: 是否在输出中保留<s>和</s>标记
+    """
+    # 确保输出目录存在
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    
+    # 读取输入文件
+    with open(input_file, 'r', encoding='utf-8') as f_in:
+        lines = [line.strip() for line in f_in if line.strip()]
+    
+    # 处理后的样本
+    processed_samples = []
+    
+    # 处理每一行
+    for line_idx, line in enumerate(tqdm(lines, desc=f"处理 {os.path.basename(input_file)}")):
+        # 根据<s>和</s>标记提取对话段落
+        segments = re.findall(r'<s>(.*?)</s>', line)
+        
+        if not segments:  # 跳过没有有效段落的行
+            continue
+        
+        # 根据分割类型处理
+        if split_type == 'line':
+            # 整行作为一个样本
+            if add_special_tokens:
+                processed_samples.append(line)
+            else:
+                # 去除<s>和</s>标记但保留段落间的分隔
+                cleaned_line = ' '.join(segments)
+                processed_samples.append(cleaned_line)
+                
+        elif split_type == 'conversation':
+            # 每个段落作为一个单独的样本
+            for segment in segments:
+                segment = segment.strip()
+                if segment:  # 跳过空段落
+                    if add_special_tokens:
+                        processed_samples.append(f"<s>{segment}</s>")
+                    else:
+                        processed_samples.append(segment)
+                        
+        elif split_type == 'paired':
+            # 将相邻的段落组合为问答对
+            for i in range(0, len(segments) - 1, 2):
+                if i + 1 < len(segments):  # 确保有下一个段落
+                    query = segments[i].strip()
+                    response = segments[i + 1].strip()
+                    
+                    if query and response:  # 跳过空段落
+                        if output_format == 'jsonl':
+                            sample = {
+                                'query': query,
+                                'response': response
+                            }
+                            processed_samples.append(json.dumps(sample, ensure_ascii=False))
+                        else:
+                            if add_special_tokens:
+                                processed_samples.append(f"<s>{query}</s> <s>{response}</s>")
+                            else:
+                                processed_samples.append(f"{query} {response}")
+    
+    # 写入处理后的样本
+    with open(output_file, 'w', encoding='utf-8') as f_out:
+        for sample in processed_samples:
+            f_out.write(sample + '\n')
+    
+    logging.info(f"对话指令数据处理完成: {input_file} -> {output_file}, 样本数: {len(processed_samples)}")
+    
+    return len(processed_samples)
+
+
 if __name__ == "__main__":
     # 设置日志
     logging.basicConfig(

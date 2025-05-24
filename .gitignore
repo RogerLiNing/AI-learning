@@ -3,3 +3,4 @@ logs/*
 transformer-from-scratch/saved_models/*
 transformer-from-scratch/data/__pycache__/*
 *.log
+transformer-from-scratch/data/*
