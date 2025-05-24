@@ -17,29 +17,8 @@ from torch.optim import AdamW
 from torch.optim.lr_scheduler import LambdaLR
 
 # 混合精度训练
-if hasattr(torch.cuda, 'amp'):
-    from torch.cuda.amp import autocast, GradScaler
-else:
-    # 如果没有CUDA，使用空的autocast与GradScaler
-    class autocast:
-        def __init__(self, enabled=True):
-            self.enabled = enabled
-        def __enter__(self):
-            pass
-        def __exit__(self, *args):
-            pass
-    
-    class GradScaler:
-        def __init__(self):
-            pass
-        def scale(self, loss):
-            return loss
-        def unscale_(self, optimizer):
-            pass
-        def step(self, optimizer):
-            optimizer.step()
-        def update(self):
-            pass
+import contextlib
+from torch.amp import autocast, GradScaler
 
 # 添加项目根目录到路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -114,6 +93,29 @@ def get_linear_schedule_with_warmup(optimizer, num_warmup_steps, num_training_st
 
 def train(config, model, train_loader, val_loader=None, device='cuda', use_amp=True):
     """训练模型"""
+    # 模型和数据诊断信息
+    logging.info(f"\n=== 模型与数据诊断信息 ===")
+    
+    # 获取词表大小 - 从模型的嵌入层获取
+    embedding_layer = model.embedding.token_embedding.embedding
+    vocab_size = embedding_layer.num_embeddings
+    logging.info(f"\u6a21型词表大小: {vocab_size}")
+    
+    # 检查第一个批次的数据
+    for batch_idx, batch in enumerate(train_loader):
+        input_ids = batch['input_ids']
+        max_id = input_ids.max().item()
+        min_id = input_ids.min().item()
+        unique_ids = torch.unique(input_ids)
+        logging.info(f"\u6570据集中的token ID范围: {min_id} 到 {max_id}")
+        logging.info(f"\u6570据集中不同的token ID数量: {len(unique_ids)}")
+        
+        if max_id >= vocab_size:
+            logging.warning(f"\u8b66告: 数据集中有token ID超出词表范围! \u6700大ID {max_id} >= 词表大小 {vocab_size}")
+        break
+    
+    logging.info(f"=== 诊断信息结束 ===\n")
+    
     # 优化器和学习率调度器
     optimizer = AdamW(
         model.parameters(),
@@ -137,7 +139,13 @@ def train(config, model, train_loader, val_loader=None, device='cuda', use_amp=T
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=0)  # 忽略PAD标记(ID=0)
     
     # 混合精度训练设置
-    scaler = GradScaler() if use_amp and device != 'cpu' else None
+    if use_amp and device != 'cpu':
+        device_type = 'cuda' if device.startswith('cuda') else device
+        scaler = GradScaler(device_type=device_type)
+        autocast_fn = lambda: autocast(device_type=device_type)
+    else:
+        autocast_fn = contextlib.nullcontext
+        scaler = None
     
     # 训练设置
     gradient_accumulation_steps = config.get('gradient_accumulation_steps', 1)
@@ -171,7 +179,9 @@ def train(config, model, train_loader, val_loader=None, device='cuda', use_amp=T
             
             # 混合精度训练
             if use_amp and device != 'cpu':
-                with autocast():
+                # 获取正确的设备类型
+                device_type = 'cuda' if device.startswith('cuda') else device
+                with autocast(device_type=device_type):
                     # 前向传播
                     outputs = model(input_ids, attention_mask)
                     
@@ -304,9 +314,11 @@ def evaluate(model, val_loader, device='cuda', use_amp=True):
             attention_mask = batch['attention_mask'].to(device)
             labels = batch['labels'].to(device)
             
-            # 混合精度评估
+            # 混合精度前向传播
             if use_amp and device != 'cpu':
-                with autocast():
+                # 获取正确的设备类型
+                device_type = 'cuda' if device.startswith('cuda') else device
+                with autocast(device_type=device_type):
                     # 前向传播
                     outputs = model(input_ids, attention_mask)
                     

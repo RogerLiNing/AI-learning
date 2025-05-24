@@ -25,6 +25,17 @@ class TokenEmbedding(nn.Module):
         返回:
             [batch_size, seq_len, d_model] 嵌入向量
         """
+        # 安全检查: 确保所有token ID在词表范围内
+        vocab_size = self.embedding.num_embeddings
+        max_id = x.max().item()
+        
+        if max_id >= vocab_size:
+            # 发现超出范围的ID，限制在词表范围内
+            print(f"\n[WARNING] 发现超出范围的token ID: {max_id} >= {vocab_size}")
+            print(f"\n[WARNING] 自动将超出范围的ID限制在词表大小范围内")
+            # 限制范围在[0, vocab_size-1]            
+            x = torch.clamp(x, 0, vocab_size-1)
+        
         # 对嵌入向量乘以sqrt(d_model)
         # 这有助于梯度在反向传播时更稳定
         return self.embedding(x) * math.sqrt(self.d_model)

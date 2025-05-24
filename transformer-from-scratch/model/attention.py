@@ -45,8 +45,9 @@ class ScaledDotProductAttention(nn.Module):
                 # 如果掩码是2维的，将其扩展为4维 [batch_size, 1, 1, seq_len_k]
                 mask = mask.unsqueeze(1).unsqueeze(1)
             
-            # 填充非常小的值，使得softmax后接近0
-            scores = scores.masked_fill(mask == 0, -1e9)
+            # 填充足够小的值，使得softmax后接近0
+            # 使用-1e4而不是-1e9，以兼容FP16混合精度训练
+            scores = scores.masked_fill(mask == 0, -1e4)
         
         # 注意力权重: [batch_size, n_heads, seq_len_q, seq_len_k]
         attention_weights = F.softmax(scores, dim=-1)
