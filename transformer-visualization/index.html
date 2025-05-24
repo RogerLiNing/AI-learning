@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformer 架构可视化</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Transformer 架构交互式可视化</h1>
+        <p>基于 "Attention is All You Need" 论文 (2017)</p>
+    </header>
+
+    <main>
+        <div class="controls">
+            <button id="overview-btn" class="active">整体架构</button>
+            <button id="encoder-btn">编码器 (Encoder)</button>
+            <button id="decoder-btn">解码器 (Decoder)</button>
+            <button id="attention-btn">自注意力机制 (Self-Attention)</button>
+            <button id="multihead-btn">多头注意力 (Multi-Head)</button>
+            <button id="demo-btn">翻译演示</button>
+        </div>
+
+        <div class="visualization-container">
+            <!-- Overview View -->
+            <div id="overview" class="visualization active">
+                <h2>Transformer 整体架构</h2>
+                <div class="transformer-model">
+                    <div class="encoder-stack">
+                        <h3>编码器 (Encoder)</h3>
+                        <div class="encoder-blocks">
+                            <div class="block">Encoder Block 6</div>
+                            <div class="block">Encoder Block 5</div>
+                            <div class="block">Encoder Block 4</div>
+                            <div class="block">Encoder Block 3</div>
+                            <div class="block">Encoder Block 2</div>
+                            <div class="block">Encoder Block 1</div>
+                        </div>
+                        <div class="input">
+                            <p>输入嵌入 + 位置编码</p>
+                            <div class="tokens">
+                                <span>我</span>
+                                <span>爱</span>
+                                <span>机器</span>
+                                <span>学习</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="connector">
+                        <div class="arrow">→</div>
+                    </div>
+                    
+                    <div class="decoder-stack">
+                        <h3>解码器 (Decoder)</h3>
+                        <div class="decoder-blocks">
+                            <div class="block">Decoder Block 6</div>
+                            <div class="block">Decoder Block 5</div>
+                            <div class="block">Decoder Block 4</div>
+                            <div class="block">Decoder Block 3</div>
+                            <div class="block">Decoder Block 2</div>
+                            <div class="block">Decoder Block 1</div>
+                        </div>
+                        <div class="output">
+                            <p>输出嵌入 + 位置编码</p>
+                            <div class="tokens">
+                                <span>I</span>
+                                <span>love</span>
+                                <span>machine</span>
+                                <span>learning</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="explanation">
+                    <p>Transformer 由编码器和解码器两部分组成，编码器和解码器都包含 6 个模块。这个架构在 2017 年由谷歌团队在论文 "Attention is All You Need" 中提出。</p>
+                    <p>编码器处理输入序列，解码器生成输出序列。与 RNN 不同，Transformer 能够并行处理序列中的所有位置，并通过注意力机制捕获长距离依赖关系。</p>
+                </div>
+            </div>
+
+            <!-- Encoder View -->
+            <div id="encoder" class="visualization">
+                <h2>编码器 (Encoder) 架构</h2>
+                <div class="encoder-detail">
+                    <div class="block-detailed">
+                        <div class="layer add-norm">Add & Norm</div>
+                        <div class="layer feed-forward">Feed Forward</div>
+                        <div class="layer add-norm">Add & Norm</div>
+                        <div class="layer multi-head">Multi-Head Attention</div>
+                        <div class="layer input">输入嵌入 + 位置编码</div>
+                    </div>
+                </div>
+                <div class="explanation">
+                    <p>每个编码器模块由两个主要子层组成：</p>
+                    <ul>
+                        <li><strong>多头注意力层 (Multi-Head Attention)</strong>：允许模型关注输入序列的不同部分。</li>
+                        <li><strong>前馈神经网络 (Feed Forward Neural Network)</strong>：对每个位置独立应用相同的全连接网络。</li>
+                    </ul>
+                    <p>每个子层周围都有残差连接 (Residual Connection) 和层归一化 (Layer Normalization)，这有助于训练更深的网络并稳定训练过程。</p>
+                </div>
+            </div>
+
+            <!-- Decoder View -->
+            <div id="decoder" class="visualization">
+                <h2>解码器 (Decoder) 架构</h2>
+                <div class="decoder-detail">
+                    <div class="block-detailed">
+                        <div class="layer add-norm">Add & Norm</div>
+                        <div class="layer feed-forward">Feed Forward</div>
+                        <div class="layer add-norm">Add & Norm</div>
+                        <div class="layer multi-head encoder-decoder">Encoder-Decoder Attention</div>
+                        <div class="layer add-norm">Add & Norm</div>
+                        <div class="layer multi-head masked">Masked Multi-Head Attention</div>
+                        <div class="layer input">输出嵌入 + 位置编码</div>
+                    </div>
+                </div>
+                <div class="explanation">
+                    <p>每个解码器模块由三个主要子层组成：</p>
+                    <ul>
+                        <li><strong>掩码多头注意力 (Masked Multi-Head Attention)</strong>：确保预测位置 i 时只能依赖位置小于 i 的输出。</li>
+                        <li><strong>编码器-解码器注意力 (Encoder-Decoder Attention)</strong>：使解码器能够关注输入序列的相关部分。</li>
+                        <li><strong>前馈神经网络 (Feed Forward Neural Network)</strong>：与编码器相同。</li>
+                    </ul>
+                    <p>与编码器类似，每个子层周围都有残差连接和层归一化。</p>
+                </div>
+            </div>
+
+            <!-- Self-Attention View -->
+            <div id="attention" class="visualization">
+                <h2>自注意力机制 (Self-Attention)</h2>
+                <div class="attention-detail">
+                    <div class="attention-step">
+                        <div class="matrix-container">
+                            <div class="matrix input-matrix">
+                                <div class="label">输入</div>
+                                <div class="matrix-content">
+                                    <div class="token">我</div>
+                                    <div class="token">爱</div>
+                                    <div class="token">机器</div>
+                                    <div class="token">学习</div>
+                                </div>
+                            </div>
+                            <div class="transform">
+                                <div class="matrix-op">
+                                    <div>Q = X·W<sup>Q</sup></div>
+                                    <div>K = X·W<sup>K</sup></div>
+                                    <div>V = X·W<sup>V</sup></div>
+                                </div>
+                            </div>
+                            <div class="matrices">
+                                <div class="matrix">
+                                    <div class="label">Query (Q)</div>
+                                </div>
+                                <div class="matrix">
+                                    <div class="label">Key (K)</div>
+                                </div>
+                                <div class="matrix">
+                                    <div class="label">Value (V)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="attention-step">
+                        <div class="attention-calc">
+                            <div class="attention-formula">
+                                Attention(Q, K, V) = softmax(QK<sup>T</sup>/√d<sub>k</sub>)V
+                            </div>
+                            <div class="attention-weights">
+                                <div class="weight-matrix" id="attention-weights-matrix">
+                                    <!-- Will be populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="attention-step">
+                        <div class="output-container">
+                            <div class="matrix output-matrix">
+                                <div class="label">输出</div>
+                                <div class="matrix-content">
+                                    <div class="token">我'</div>
+                                    <div class="token">爱'</div>
+                                    <div class="token">机器'</div>
+                                    <div class="token">学习'</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="explanation">
+                    <p>自注意力机制是 Transformer 的核心，它允许模型关注输入序列中的不同部分。计算步骤如下：</p>
+                    <ol>
+                        <li>为每个输入 token 创建查询 (Query)、键 (Key) 和值 (Value) 向量</li>
+                        <li>计算每个 token 与所有其他 token 的注意力分数 (Q·K<sup>T</sup>)</li>
+                        <li>对分数进行缩放和 softmax 归一化</li>
+                        <li>使用这些权重对值向量加权求和，得到最终输出</li>
+                    </ol>
+                    <p>自注意力的关键优势是能够直接建立远距离依赖关系，而不像 RNN 那样需要通过多个时间步骤传递信息。</p>
+                </div>
+            </div>
+
+            <!-- Multi-Head Attention View -->
+            <div id="multihead" class="visualization">
+                <h2>多头注意力 (Multi-Head Attention)</h2>
+                <div class="multihead-detail">
+                    <div class="input-vector">输入向量</div>
+                    <div class="heads-container">
+                        <div class="head">
+                            <div class="head-label">头 1</div>
+                            <div class="head-matrices">
+                                <div>W<sub>Q1</sub></div>
+                                <div>W<sub>K1</sub></div>
+                                <div>W<sub>V1</sub></div>
+                            </div>
+                            <div class="attention-block">Self-Attention</div>
+                        </div>
+                        <div class="head">
+                            <div class="head-label">头 2</div>
+                            <div class="head-matrices">
+                                <div>W<sub>Q2</sub></div>
+                                <div>W<sub>K2</sub></div>
+                                <div>W<sub>V2</sub></div>
+                            </div>
+                            <div class="attention-block">Self-Attention</div>
+                        </div>
+                        <div class="head-dots">...</div>
+                        <div class="head">
+                            <div class="head-label">头 h</div>
+                            <div class="head-matrices">
+                                <div>W<sub>Qh</sub></div>
+                                <div>W<sub>Kh</sub></div>
+                                <div>W<sub>Vh</sub></div>
+                            </div>
+                            <div class="attention-block">Self-Attention</div>
+                        </div>
+                    </div>
+                    <div class="concat">拼接 (Concat)</div>
+                    <div class="projection">线性投影 W<sup>O</sup></div>
+                    <div class="output-vector">输出向量</div>
+                </div>
+                <div class="explanation">
+                    <p>多头注意力机制由多个并行的自注意力层组成，每个头都有自己的参数。这使模型能够：</p>
+                    <ul>
+                        <li>同时关注序列中的不同位置</li>
+                        <li>在不同的表示子空间中捕获不同的特征</li>
+                    </ul>
+                    <p>例如，在翻译"动物没有过马路，因为它太累了"时，不同的注意力头可能会关注不同的关系，帮助确定"它"指代的是"动物"。</p>
+                    <p>多头注意力的计算步骤：</p>
+                    <ol>
+                        <li>对输入进行 h 次不同的线性投影，生成不同的 Q、K、V 集合</li>
+                        <li>对每组 Q、K、V 并行执行自注意力计算</li>
+                        <li>拼接所有头的输出</li>
+                        <li>通过最后一个线性层投影到最终输出空间</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Translation Demo -->
+            <div id="demo" class="visualization">
+                <h2>Transformer 翻译演示</h2>
+                <div class="translation-demo">
+                    <div class="input-sentence">
+                        <h3>输入句子 (中文)</h3>
+                        <div class="demo-input">
+                            <span>动物</span>
+                            <span>没有</span>
+                            <span>过</span>
+                            <span>马路</span>
+                            <span>，</span>
+                            <span>因为</span>
+                            <span>它</span>
+                            <span>太</span>
+                            <span>累</span>
+                            <span>了</span>
+                        </div>
+                    </div>
+                    <div class="attention-visualization">
+                        <h3>注意力可视化</h3>
+                        <div class="demo-attention-matrix" id="demo-attention-matrix">
+                            <!-- Will be populated by JS -->
+                        </div>
+                        <div class="matrix-labels">
+                            <div>当前关注 "<span id="current-focus">它</span>" 词的注意力分布</div>
+                        </div>
+                    </div>
+                    <div class="output-sentence">
+                        <h3>输出句子 (英文)</h3>
+                        <div class="demo-output">
+                            <span>The</span>
+                            <span>animal</span>
+                            <span>did</span>
+                            <span>not</span>
+                            <span>cross</span>
+                            <span>the</span>
+                            <span>road</span>
+                            <span>because</span>
+                            <span>it</span>
+                            <span>was</span>
+                            <span>too</span>
+                            <span>tired</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="demo-controls">
+                    <button id="play-demo">播放演示</button>
+                    <button id="highlight-it">高亮 "它" 的关注点</button>
+                </div>
+                <div class="explanation">
+                    <p>这个演示展示了 Transformer 如何通过注意力机制处理长距离依赖关系。</p>
+                    <p>在翻译"动物没有过马路，因为它太累了"这个句子时，注意力机制帮助模型理解"它"指代的是"动物"，而不是"马路"。</p>
+                    <p>注意力热力图显示了当模型处理"它"这个词时，对输入序列中各个词的关注程度。颜色越深表示关注度越高。</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>基于 "Attention is All You Need" 论文的 Transformer 架构可视化</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

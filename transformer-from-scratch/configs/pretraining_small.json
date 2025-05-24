@@ -1,0 +1,28 @@
+{
+  "data_path": "data/raw/test_corpus.txt",
+  "tokenizer_path": "data/tokenizer/tokenizer_small.json",
+  "tokenizer_type": "basic",
+  "vocab_size": 1000,
+  "save_dir": "saved_models/pretrain",
+  "log_dir": "logs/pretrain",
+  
+  "model_type": "lm",
+  "pretraining_task": "clm",
+  "d_model": 128,
+  "n_layers": 2,
+  "n_heads": 2,
+  "d_ff": 512,
+  "max_seq_len": 128,
+  "dropout": 0.1,
+  
+  "batch_size": 2,
+  "num_epochs": 2,
+  "learning_rate": 5e-4,
+  "warmup_ratio": 0.1,
+  "weight_decay": 0.01,
+  "gradient_accumulation_steps": 1,
+  "val_ratio": 0.2,
+  "logging_steps": 1,
+  "save_steps": 10,
+  "eval_steps": 5
+}
