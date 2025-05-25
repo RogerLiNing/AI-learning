@@ -7,17 +7,17 @@
     "text_field": "completion",
     
     "// 模型结构参数": "",
-    "d_model": 768,
-    "n_layers": 8,
-    "n_heads": 12,
-    "d_ff": 3072,
+    "d_model": 1024,
+    "n_layers": 12,
+    "n_heads": 16,
+    "d_ff": 4096,
     "dropout": 0.1,
     "tie_weights": true,
     
     "// 序列和批次参数": "",
     "max_length": 512,
     "vocab_size": 21132,
-    "batch_size": 32,
+    "batch_size": 64,
     
     "// 数据加载优化": "",
     "num_workers": 20,
@@ -37,9 +37,6 @@
     "save_every": 5000,
     "eval_every": 1000,
     "use_amp": true,
-    "mixed_precision": "fp16",
-    "cuda_deterministic": false,
-    "benchmark_cudnn": true,
     
     "// 内存优化": "",
     "memory_efficient_attention": true,

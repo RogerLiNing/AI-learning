@@ -27,48 +27,32 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 安全处理函数，确保所有ID都在有效范围内
 def safe_process_batch(batch, vocab_size, device):
-    """安全处理批次，确保input_ids不超出词表范围"""
+    """安全处理批次数据，确保所有ID都在有效范围内"""
     input_ids = batch['input_ids'].to(device)
     attention_mask = batch['attention_mask'].to(device)
     labels = batch['labels'].to(device)
     
-    # 检查输入ID是否超出词表范围 - 使用更安全的方法检测最大值
-    # 避免直接使用.max().item()，这在某些CUDA设备上可能有兼容性问题
-    try:
-        # 先移到CPU，再获取最大值
-        max_input_id = input_ids.detach().cpu().max().item()
-        if max_input_id >= vocab_size:
-            logging.warning(f"发现输入ID超出词表范围: {max_input_id} >= {vocab_size}")
-            # 将超出范围的ID替换为UNK token (通常是1)
-            input_ids = torch.clamp(input_ids, max=vocab_size-1)
-    except Exception as e:
-        logging.warning(f"检查词表范围时出错: {e}")
-        # 保险起见，应用截断
-        input_ids = torch.clamp(input_ids, max=vocab_size-1)
+    # 检查并限制输入ID范围
+    max_input_id = input_ids.max().item()
+    if max_input_id >= vocab_size:
+        logging.warning(f"输入中发现超出范围的token ID: {max_input_id} >= {vocab_size}")
+        logging.warning(f"自动将超出范围的ID限制在词表大小范围内")
+        input_ids = torch.clamp(input_ids, 0, vocab_size-1)
     
-    # 检查并限制标签ID范围，同样使用安全方法
-    try:
-        # 跳过忽略的标签(-100)
-        valid_labels = labels[labels != -100]
-        if len(valid_labels) > 0:
-            max_label_id = valid_labels.detach().cpu().max().item()
-            if max_label_id >= vocab_size:
-                logging.warning(f"标签中发现超出范围的token ID: {max_label_id} >= {vocab_size}")
-                logging.warning(f"自动将超出范围的标签限制在词表大小范围内")
-                # 只对非-100的值进行约束
-                labels = torch.where(
-                    labels != -100,
-                    torch.clamp(labels, 0, vocab_size-1),
-                    labels
-                )
-    except Exception as e:
-        logging.warning(f"检查标签范围时出错: {e}")
-        # 安全起见，对非-100的标签应用截断
-        labels = torch.where(
-            labels != -100,
-            torch.clamp(labels, 0, vocab_size-1),
-            labels
-        )
+    # 检查并限制标签ID范围
+    # 跳过忽略的标签(-100)
+    valid_labels = labels[labels != -100]
+    if len(valid_labels) > 0:
+        max_label_id = valid_labels.max().item()
+        if max_label_id >= vocab_size:
+            logging.warning(f"标签中发现超出范围的token ID: {max_label_id} >= {vocab_size}")
+            logging.warning(f"自动将超出范围的标签限制在词表大小范围内")
+            # 只对非-100的值进行约束
+            labels = torch.where(
+                labels != -100,
+                torch.clamp(labels, 0, vocab_size-1),
+                labels
+            )
     
     return input_ids, attention_mask, labels
 
