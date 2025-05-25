@@ -7,22 +7,22 @@
     "text_field": "completion",
     
     "// 模型结构参数": "",
-    "d_model": 1024,
-    "n_layers": 12,
-    "n_heads": 16,
-    "d_ff": 4096,
-    "dropout": 0.1,
+    "d_model": 256,
+    "n_layers": 4,
+    "n_heads": 8,
+    "d_ff": 1024,
+    "dropout": 0.0,
     "tie_weights": true,
     
     "// 序列和批次参数": "",
-    "max_length": 512,
+    "max_length": 128,
     "vocab_size": 21132,
-    "batch_size": 256,
+    "batch_size": 128,
     
     "// 数据加载优化": "",
     "num_workers": 28,
     "pin_memory": true,
-    "prefetch_factor": 16,
+    "prefetch_factor": 32,
     
     "// 训练优化参数": "",
     "lr": 8e-4,
@@ -34,6 +34,7 @@
     
     "// 训练流程参数": "",
     "epochs": 5,
+    "max_samples": 50000,
     "save_every": 5000,
     "eval_every": 1000,
     "use_amp": true,
