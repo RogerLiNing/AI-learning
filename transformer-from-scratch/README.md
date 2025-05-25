@@ -1,105 +1,165 @@
 # Transformer 模型从零实现
 
-这个项目展示了如何从零开始实现一个 Transformer 模型，包括预训练和微调的完整流程。我们将逐步构建 Transformer 的各个组件，并最终训练一个可用的语言模型。
+这个项目展示了如何从零开始实现一个 Transformer 模型，包括预训练和微调的完整流程。我们使用PyTorch框架构建了Transformer的各个组件，并结合HuggingFace的分词器实现了一个完整的语言模型训练与推理系统。
 
 ## 项目结构
 
 ```
 transformer-from-scratch/
-├── configs/            # 配置文件
-│   ├── pretraining.json    # 预训练配置
-│   └── finetuning.json     # 微调配置
-├── data/               # 数据处理
-│   ├── dataset.py          # 数据集加载和处理
-│   ├── tokenizer.py        # 分词器实现
-│   └── preprocessing.py    # 数据预处理
-├── model/              # 模型实现
-│   ├── attention.py        # 注意力机制实现
-│   ├── embeddings.py       # 嵌入层实现
-│   ├── encoder.py          # 编码器实现
-│   ├── decoder.py          # 解码器实现
-│   ├── transformer.py      # 完整Transformer模型
-│   └── utils.py            # 模型辅助函数
-├── scripts/            # 训练和评估脚本
-│   ├── pretrain.py         # 预训练脚本
-│   ├── finetune.py         # 微调脚本
-│   └── evaluate.py         # 评估脚本
-├── utils/              # 通用工具
-│   ├── logger.py           # 日志工具
-│   ├── visualization.py    # 可视化工具
-│   └── metrics.py          # 评估指标
-├── requirements.txt    # 项目依赖
-└── README.md           # 项目说明
+├── configs/                     # 配置文件
+│   ├── pretrain_hf.json          # 标准预训练配置
+│   ├── pretrain_hf_small.json    # 小数据集预训练配置
+│   └── finetune.json             # 微调配置
+├── data/                        # 数据处理
+│   ├── conversation_dataset.py    # 对话数据集处理
+│   ├── hf_tokenizer.py            # HuggingFace分词器封装
+│   └── processed/                 # 预处理后的数据
+├── model/                       # 模型实现
+│   ├── attention.py               # 多头自注意力实现
+│   ├── embeddings.py              # 嵌入层与位置编码
+│   ├── feedforward.py             # 前馈神经网络
+│   ├── transformer.py             # 完整Transformer模型
+│   └── generation.py              # 文本生成相关功能
+├── scripts/                     # 训练和推理脚本
+│   ├── pretrain_with_hf.py        # 使用HF分词器的预训练脚本
+│   ├── finetune_model.py          # 问答数据微调脚本
+│   ├── interactive_chat.py        # 交互式聊天界面
+│   └── generate_text.py           # 文本生成脚本
+├── saved_models/                # 保存的模型检查点
+│   ├── pretrain_hf_small/         # 小数据集预训练模型
+│   └── finetuned/                 # 微调后的模型
+├── requirements.txt             # 项目依赖
+└── README.md                    # 项目说明
 ```
 
-## 实现步骤
+## 项目特点
 
-1. **Transformer核心组件实现**
-   - 多头自注意力机制
-   - 位置编码
-   - 前馈神经网络
-   - 编码器和解码器层
-   - 完整Transformer模型
+1. **从零实现Transformer架构**
+   - 多头自注意力机制实现
+   - 可调整的位置编码
+   - 自回归解码器设计
+   - 兼容GPU和Apple Silicon加速
 
-2. **数据处理流程**
-   - 实现或使用分词器
-   - 数据加载和预处理
-   - 训练批次生成
+2. **HuggingFace集成**
+   - 使用HuggingFace的高质量分词器
+   - 支持中文分词和处理
+   - 兼容bert-base-chinese词表
 
-3. **预训练阶段**
-   - 实现掩码语言模型任务
-   - 设计预训练配置
-   - 执行预训练过程
-   - 保存预训练模型
+3. **高性能训练**
+   - 混合精度训练(AMP)支持
+   - 自动批处理和梯度累积
+   - 训练过程中的安全检查
+   - 自动处理超出词表范围的token ID
 
-4. **微调阶段**
-   - 针对下游任务调整模型
-   - 执行微调过程
-   - 评估模型性能
+4. **完整的训练和推理流程**
+   - 多阶段预训练支持
+   - 问答数据的微调功能
+   - 交互式聊天界面
+   - 参数可调的文本生成
 
-## 训练数据
+## 训练与微调
 
-我们将使用以下类型的数据进行模型训练：
+### 预训练
 
-1. **预训练**: 使用大规模文本语料库（如维基百科、中文新闻语料等）
-2. **微调**: 根据具体任务选择相应数据集（如文本分类、问答等）
+项目支持使用对话数据进行预训练，支持以下两种模式：
 
-## 训练配置
+1. **标准预训练**: 使用大规模对话数据（百万级别样本）
+   ```bash
+   python scripts/pretrain_with_hf.py --config configs/pretrain_hf.json --cuda --amp
+   ```
 
-预训练和微调配置在`configs`目录中定义，包括：
+2. **小数据集训练**: 使用约5000个样本进行快速实验
+   ```bash
+   python scripts/pretrain_with_hf_small_fixed3.py --config configs/pretrain_hf_small.json --cuda --amp
+   ```
 
-- 模型大小（层数、隐藏维度、注意力头数等）
-- 训练参数（学习率、批次大小、训练步数等）
-- 数据参数（序列长度、词表大小等）
+### 微调
 
-## 使用说明
-
-### 环境设置
+支持使用问答对数据进行微调，提升模型在特定对话场景的表现：
 
 ```bash
-pip install -r requirements.txt
+python scripts/finetune_model.py \
+  --config configs/finetune.json \
+  --model_path saved_models/pretrain_hf_small/checkpoint-epoch-5/pytorch_model.bin \
+  --train_file data/raw/train.jsonl \
+  --batch_size 8 \
+  --epochs 5 \
+  --lr 2e-5 \
+  --cuda
 ```
 
-### 预训练模型
+微调数据格式(JSONL)：
+```json
+{"question": "你好，最近怎么样？", "answer": "你好！我最近还不错，谢谢。"}
+{"question": "今天天气如何？", "answer": "今天的天气很晴朗。"}
+```
+
+## 文本生成与交互
+
+### 交互式聊天
+
+使用交互式聊天脚本与模型进行实时对话：
 
 ```bash
-python scripts/pretrain.py --config configs/pretraining.json
+python scripts/interactive_chat.py \
+  --config configs/finetune.json \
+  --model_path saved_models/finetuned/best_model/pytorch_model.bin \
+  --temperature 0.7 \
+  --cuda
 ```
 
-### 微调模型
+交互式界面支持以下命令：
+- `/debug`: 切换调试模式，显示生成详情
+- `/params`: 查看和修改生成参数
+- `/save`: 保存对话历史
+
+### 单次文本生成
+
+使用生成脚本进行单次文本生成：
 
 ```bash
-python scripts/finetune.py --config configs/finetuning.json --pretrained_model path/to/pretrained/model
+python scripts/generate_text.py \
+  --config configs/pretrain_hf_small.json \
+  --model_path saved_models/pretrain_hf_small/checkpoint-epoch-5/pytorch_model.bin \
+  --prompt "你好，我想" \
+  --max_length 50 \
+  --temperature 0.8 \
+  --cuda
 ```
 
-### 评估模型
+## 系统要求与依赖
+
+### 硬件要求
+- **GPU训练**: 建议至少8GB显存
+- **CPU训练**: 可行但速度较慢
+- **Apple Silicon**: 支持M系列芯片加速
+
+### 主要依赖
+- PyTorch >= 1.10.0
+- Transformers >= 4.20.0
+- tqdm
+- numpy
+
+## 高级特性
+
+### 混合精度训练
+
+开启混合精度训练可显著提升训练速度，特别是在支持FP16的NVIDIA GPU上：
 
 ```bash
-python scripts/evaluate.py --model path/to/model --test_data path/to/test/data
+python scripts/pretrain_with_hf_small_fixed3.py --cuda --amp
 ```
 
-## 扩展阅读
+### 生成参数调优
+
+在交互式聊天中可以通过`/params`命令实时调整生成参数：
+- `temperature`: 控制生成多样性（值越大越随机）
+- `top_k`: K值采样参数
+- `top_p`: 核采样参数
+- `max_length`: 最大生成长度
+
+## 参考资料
 
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762) - 原始Transformer论文
-- [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/abs/1810.04805)
-- [GPT: Improving Language Understanding by Generative Pre-Training](https://s3-us-west-2.amazonaws.com/openai-assets/research-covers/language-unsupervised/language_understanding_paper.pdf)
+- [HuggingFace Transformers](https://huggingface.co/docs/transformers/index) - 分词器和模型参考
+- [PyTorch Mixed Precision](https://pytorch.org/docs/stable/notes/amp_examples.html) - 混合精度训练指南
