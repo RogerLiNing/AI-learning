@@ -15,7 +15,8 @@
     "tie_weights": true,
     
     "// 序列和批次参数": "",
-    "max_length": 256,
+    "max_length": 512,
+    "max_seq_len": 512,
     "vocab_size": 21132,
     "batch_size": 128,
     
