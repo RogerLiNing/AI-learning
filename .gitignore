@@ -2,6 +2,9 @@ venv
 logs/*
 transformer-from-scratch/saved_models/*
 transformer-from-scratch/data/__pycache__/*
+transformer-from-scratch/data/raw
+transformer-from-scratch/data/processed
 *.log
 *.jsonl
 *.txt
+*.pyc

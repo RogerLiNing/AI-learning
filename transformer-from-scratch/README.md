@@ -73,6 +73,21 @@ transformer-from-scratch/
    python scripts/pretrain_with_hf_small_fixed3.py --config configs/pretrain_hf_small.json --cuda --amp
    ```
 
+### 预训练数据格式
+
+预训练使用对话数据，每行是一个完整的对话文本，格式如下：
+
+```
+用户A: 你好，请问一下今天天气如何？ 用户B: 今天天气晴朗，温度适宜。 用户A: 那应该适合出门。 用户B: 是的，非常适合外出活动。
+用户A: 你能帮我查一下北京到上海的高铁吗？ 用户B: 当然可以，你要哪天的车次信息？ 用户A: 明天上午的。 用户B: 好的，明天上午有9点，10点30分和11点15分有三起3车次。
+```
+
+预训练数据文件的位置在`data/processed/`目录下，包括：
+- `dialogue_conversation_train.txt`: 训练集
+- `dialogue_conversation_val.txt`: 验证集
+
+这些数据文件包含了完整的对话上下文，而非单个问答对，更适合训练通用的语言模型。
+
 ### 微调
 
 支持使用问答对数据进行微调，提升模型在特定对话场景的表现：
